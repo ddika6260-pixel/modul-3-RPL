@@ -1,23 +1,46 @@
+
+from unittest.mock import MagicMock
 from models.anggota_model import AnggotaModel
 
-model = AnggotaModel()
 
-# 1. Menguji fungsi Create
-print("Menambahkan data anggota...")
-model.create_anggota(
-    "Wayan Andika",
-    "Palu"
-)
-print("Data anggota berhasil disimpan!")
+def test_create_anggota():
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
 
-# 2. Menguji fungsi Read
-print("\n=== Daftar Anggota ===")
+    mock_conn.cursor.return_value = mock_cursor
 
-daftar_anggota = model.get_all_anggota()
+    model = AnggotaModel(connection=mock_conn)
 
-for anggota in daftar_anggota:
-    print(
-        f"[{anggota['id_anggota']}] "
-        f"{anggota['nama']} - "
-        f"{anggota['alamat']}"
+    hasil = model.create_anggota(
+        "Wayan Andika",
+        "Palu"
     )
+
+    assert hasil is True
+    mock_cursor.execute.assert_called_once()
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()
+
+
+def test_get_all_anggota():
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+
+    mock_cursor.fetchall.return_value = [
+        {
+            "id_anggota": 1,
+            "nama": "Wayan Andika",
+            "alamat": "Palu"
+        }
+    ]
+
+    mock_conn.cursor.return_value = mock_cursor
+
+    model = AnggotaModel(connection=mock_conn)
+
+    hasil = model.get_all_anggota()
+
+    assert len(hasil) == 1
+    assert hasil[0]["nama"] == "Wayan Andika"
+    assert hasil[0]["alamat"] == "Palu"
+    mock_cursor.close.assert_called_once()
