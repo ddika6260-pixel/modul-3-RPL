@@ -1,29 +1,52 @@
 
 import tkinter.messagebox as messagebox
+
 from models.buku_model import BukuModel
 from views.buku_view import BukuView
 
 
 class BukuController:
-    def __init__(self):
+
+    def __init__(self, user_role="admin", on_logout=None):
         self.model = BukuModel()
         self.view = BukuView()
 
+        self.user_role = user_role
+        self.on_logout = on_logout
+
+        # Menghubungkan tombol CRUD
         self.view.btn_simpan.configure(
             command=self.simpan_data
         )
+
         self.view.btn_perbarui.configure(
             command=self.perbarui_data
         )
+
         self.view.btn_hapus.configure(
             command=self.hapus_data
         )
 
+        # Mengatur hak akses berdasarkan role
+        if self.user_role == "anggota":
+            self.view.btn_simpan.configure(state="disabled")
+            self.view.btn_perbarui.configure(state="disabled")
+            self.view.btn_hapus.configure(state="disabled")
+
+        # Menghubungkan tabel
         self.view.tabel.bind(
-            "<<TreeviewSelect>>", self.pilih_data
+            "<<TreeviewSelect>>",
+            self.pilih_data
         )
 
+        # Memuat data buku
         self.muat_data_tabel()
+
+        # Menghubungkan tombol Logout jika tersedia
+        if hasattr(self.view, "btn_logout"):
+            self.view.btn_logout.configure(
+                command=self.logout
+            )
 
     def muat_data_tabel(self):
         for item in self.view.tabel.get_children():
@@ -59,6 +82,9 @@ class BukuController:
         self.view.txt_tahun.insert(0, data[3])
 
     def simpan_data(self):
+        if self.user_role == "anggota":
+            return
+
         judul = self.view.txt_judul.get().strip()
         penulis = self.view.txt_penulis.get().strip()
         tahun = self.view.txt_tahun.get().strip()
@@ -98,6 +124,7 @@ class BukuController:
                 "Peringatan",
                 "Tahun terbit harus berupa angka 4 digit!"
             )
+
         except Exception as e:
             messagebox.showerror(
                 "Kesalahan",
@@ -105,6 +132,9 @@ class BukuController:
             )
 
     def perbarui_data(self):
+        if self.user_role == "anggota":
+            return
+
         pilihan = self.view.tabel.selection()
 
         if not pilihan:
@@ -117,6 +147,7 @@ class BukuController:
         data = self.view.tabel.item(
             pilihan[0], "values"
         )
+
         id_buku = data[0]
 
         judul = self.view.txt_judul.get().strip()
@@ -158,6 +189,7 @@ class BukuController:
                 "Peringatan",
                 "Tahun harus berupa angka 4 digit!"
             )
+
         except Exception as e:
             messagebox.showerror(
                 "Kesalahan",
@@ -165,6 +197,9 @@ class BukuController:
             )
 
     def hapus_data(self):
+        if self.user_role == "anggota":
+            return
+
         pilihan = self.view.tabel.selection()
 
         if not pilihan:
@@ -177,6 +212,7 @@ class BukuController:
         data = self.view.tabel.item(
             pilihan[0], "values"
         )
+
         id_buku = data[0]
 
         konfirmasi = messagebox.askyesno(
@@ -208,6 +244,20 @@ class BukuController:
                 "Kesalahan",
                 f"Gagal menghapus buku: {e}"
             )
+
+    def logout(self):
+        konfirmasi = messagebox.askyesno(
+            "Logout",
+            "Apakah Anda yakin ingin keluar?"
+        )
+
+        if not konfirmasi:
+            return
+
+        self.view.destroy()
+
+        if self.on_logout:
+            self.on_logout()
 
     def run(self):
         self.view.mainloop()
