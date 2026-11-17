@@ -6,9 +6,13 @@ from config.database import Database
 
 class UserModel:
 
-    def __init__(self):
+    def __init__(self, connection=None):
         self.db = Database()
-        self.conn = self.db.get_connection()
+
+        if connection is not None:
+            self.conn = connection
+        else:
+            self.conn = self.db.get_connection()
 
     @staticmethod
     def hash_password(password):
@@ -17,6 +21,8 @@ class UserModel:
         ).hexdigest()
 
     def autentikasi(self, username, password):
+        cursor = None
+
         try:
             cursor = self.conn.cursor(dictionary=True)
 
@@ -31,15 +37,19 @@ class UserModel:
             cursor.execute(query, (username, password_hash))
             user = cursor.fetchone()
 
-            cursor.close()
-
             return user
 
         except mysql.connector.Error as error:
             print("Error login:", error)
             return None
 
+        finally:
+            if cursor:
+                cursor.close()
+
     def register_user(self, username, password, role):
+        cursor = None
+
         try:
             cursor = self.conn.cursor()
 
@@ -56,7 +66,6 @@ class UserModel:
             )
 
             self.conn.commit()
-            cursor.close()
 
             return True
 
@@ -64,3 +73,7 @@ class UserModel:
             print("Registrasi gagal:", error)
             self.conn.rollback()
             return False
+
+        finally:
+            if cursor:
+                cursor.close()
